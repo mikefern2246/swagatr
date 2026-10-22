@@ -1,24 +1,3 @@
-// --- โค้ดป้องกัน Error สำหรับรันบนเว็บเบราว์เซอร์ ---
-if (!window.api) {
-    window.api = {
-        onState: (cb) => {},
-        onItem: (cb) => {},
-        onTotals: (cb) => {}, // เพิ่มตัวนี้เข้าไปเพื่อป้องกัน Error
-        act: async (...args) => {
-            console.log("Web Mode dummy act:", args);
-            return null;
-        }
-    };
-} else {
-    // เผื่อกรณีที่มี window.api อยู่แล้วแต่ขาด onTotals บางตัว
-    if (typeof window.api.onTotals !== 'function') {
-        window.api.onTotals = (cb) => {};
-    }
-}
-
-
-
-
 'use strict';
 
 (() => {
@@ -328,23 +307,7 @@ if (!window.api) {
   $('btnDbgClear').addEventListener('click', () => { debugLines.length = 0; $('dbgLog').value = ''; });
 
   // ---------- จาก main ----------
-  // --- ส่วนป้องกัน Error เมื่อรันบนเว็บเบราว์เซอร์ปกติ ---
-if (window.api && typeof window.api.onState === 'function') {
-    window.api.onState(s => { 
-        state = s; 
-        renderAll(); 
-    });
-} else {
-    console.log("Running in Web Mode: window.api.onState is skipped.");
-}
-
-if (window.api && typeof window.api.onItem === 'function') {
-    window.api.onItem(e => {
-        feed.push(e);
-    });
-} else {
-    console.log("Running in Web Mode: window.api.onItem is skipped.");
-}
+  window.api.onState(s => { state = s; renderAll(); });
 
   window.api.onItem(e => {
     feed.push(e);

@@ -1,3 +1,18 @@
+// --- โค้ดป้องกัน Error สำหรับรันบนเว็บเบราว์เซอร์ ---
+if (!window.api) {
+    window.api = {
+        onState: (cb) => {},
+        onItem: (cb) => {},
+        act: async (...args) => {
+            console.log("Web Mode dummy act:", args);
+            return null;
+        }
+    };
+}
+
+
+
+
 'use strict';
 
 (() => {

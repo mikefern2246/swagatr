@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; img-src 'self' data:">
+<title>WebGame Controller</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #090d16; color: #e2e8f0;
+    font-family: ui-sans-serif, system-ui, "Segoe UI", "Noto Sans Thai", sans-serif; font-size: 13px; }
+  button, input, select, textarea { font: inherit; color: inherit; }
+
+  /* ----- แถบบน 2 แถว (แถวละ 52px ต้องตรงกับ main.js) ----- */
+  .row { height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 12px;
+    background: #0b1120; border-bottom: 1px solid #1e293b; position: relative; z-index: 5; }
+  .brand { font-weight: 700; color: #34d399; white-space: nowrap; }
+  .brand small { color: #64748b; font-weight: 400; margin-left: 6px; }
+  input[type=text] { background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 7px 10px; outline: none; }
+  input[type=text]:focus, textarea:focus { border-color: #10b981; }
+  #urlInput { flex: 1; min-width: 140px; font-family: ui-monospace, Consolas, monospace; }
+  #nameInput { width: 120px; }
+  select { background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 6px 8px; max-width: 190px; }
+
+  .btn { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 6px 12px; cursor: pointer; white-space: nowrap; }
+  .btn:hover:not(:disabled) { background: #334155; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  .btn.primary { background: #059669; border-color: #059669; color: #fff; font-weight: 600; }
+  .btn.primary:hover:not(:disabled) { background: #10b981; }
+  .btn.danger { background: #3b0a1a; border-color: #7f1d3d; color: #fda4af; }
+  .btn.sm { padding: 3px 8px; font-size: 12px; }
+  #err { color: #fda4af; font-size: 12px; white-space: nowrap; }
+
+  #toast { display: none; align-items: center; gap: 8px; background: #052e22; border: 1px solid #047857;
+    border-radius: 8px; padding: 3px 10px 3px 4px; max-width: 320px; }
+  #toast.show { display: flex; }
+  #toast img { width: 32px; height: 32px; object-fit: contain; border-radius: 4px; background: #020617; }
+  #toast span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
+
+  #tabs { flex: 1; display: flex; gap: 6px; overflow-x: auto; min-width: 0; }
+  .tab { display: flex; align-items: center; gap: 6px; background: #111827; border: 1px solid #1f2937;
+    border-radius: 8px; padding: 6px 12px; cursor: pointer; max-width: 180px; flex: 0 0 auto; }
+  .tab:hover { background: #1a2234; }
+  .tab.active { border-color: #10b981; background: #0f2a22; }
+  .tab.stealth { color: #fbbf24; }
+  .tname { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  #badge { background: #e11d48; color: #fff; border-radius: 999px; padding: 0 6px; font-size: 11px; margin-left: 4px; display: none; }
+
+  /* ----- ช่องเกม (split) ----- */
+  #panes { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+  .pane { position: absolute; background: #030712; border: 1px solid #111827; overflow: hidden; }
+  .pane.active { border-color: #10b981; }
+  .phead { pointer-events: auto; height: 30px; display: flex; align-items: center; gap: 4px; padding: 0 6px;
+    background: #0b1120; border-bottom: 1px solid #1e293b; font-size: 12px; white-space: nowrap; overflow: hidden; }
+  .pane.active .phead { background: #0d2018; }
+  .pidx { background: #1e293b; color: #94a3b8; border-radius: 4px; padding: 0 6px; font-family: ui-monospace, Consolas, monospace; }
+  .pname { overflow: hidden; text-overflow: ellipsis; min-width: 30px; flex: 1; cursor: pointer; }
+  .ib { background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 1px 6px; cursor: pointer; line-height: 20px; }
+  .ib:hover:not(:disabled) { background: #1e293b; border-color: #334155; }
+  .ib:disabled { opacity: .3; cursor: default; }
+  .ib.on { color: #fbbf24; border-color: #78350f; background: #2a1c05; }
+  .zl { min-width: 44px; text-align: center; color: #94a3b8; }
+  .sep { width: 1px; height: 16px; background: #1e293b; margin: 0 2px; }
+  .pbody { position: absolute; left: 0; right: 0; top: 30px; bottom: 0; display: flex; align-items: center; justify-content: center;
+    text-align: center; color: #94a3b8; line-height: 1.7; pointer-events: auto; }
+  .pbody.empty { border: 1px dashed #1e293b; margin: 8px; border-radius: 10px; font-size: 12px; color: #475569; }
+  .big { font-size: 36px; }
+  .title { color: #34d399; font-weight: 700; letter-spacing: .08em; font-size: 15px; }
+  .sub { font-size: 12px; color: #64748b; }
+
+  /* ----- แผงไอเทมด้านขวา ----- */
+  #side { position: absolute; right: 0; top: 104px; bottom: 0; width: 360px; background: #0b1120;
+    border-left: 1px solid #1e293b; z-index: 3; display: none; flex-direction: column; }
+  #side.open { display: flex; }
+  .stabs { display: flex; border-bottom: 1px solid #1e293b; }
+  .stab { flex: 1; padding: 9px 4px; background: transparent; border: 0; border-bottom: 2px solid transparent; cursor: pointer; color: #94a3b8; }
+  .stab.active { color: #34d399; border-bottom-color: #10b981; }
+  .sbar { display: flex; gap: 6px; padding: 8px; border-bottom: 1px solid #111827; align-items: center; }
+  .sbar select { flex: 1; min-width: 0; }
+  .spage { display: none; flex: 1; min-height: 0; overflow-y: auto; padding: 8px; }
+  .spage.active { display: block; }
+  .item { display: flex; align-items: center; gap: 8px; padding: 6px; border-radius: 8px; border: 1px solid #111827; background: #0f172a; margin-bottom: 6px; }
+  .item img, .item .noimg { width: 40px; height: 40px; object-fit: contain; border-radius: 6px; background: #020617; flex: 0 0 auto; }
+  .item .noimg { display: flex; align-items: center; justify-content: center; color: #475569; font-size: 18px; }
+  .item .meta { min-width: 0; }
+  .item b { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item small { color: #64748b; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .item .cnt { margin-left: auto; font-weight: 700; color: #34d399; }
+  .ghead { margin: 10px 0 6px; font-weight: 600; color: #cbd5e1; }
+  .hint { color: #64748b; font-size: 12px; line-height: 1.6; }
+  textarea { width: 100%; background: #020617; border: 1px solid #334155; border-radius: 8px; padding: 6px 8px; outline: none;
+    font-family: ui-monospace, Consolas, monospace; font-size: 11.5px; resize: vertical; }
+  .field { margin-bottom: 10px; }
+  .field label { display: block; margin-bottom: 4px; color: #cbd5e1; }
+  .chk { display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+  .errs { color: #fda4af; font-size: 12px; white-space: pre-wrap; margin: 6px 0; }
+  .okmsg { color: #34d399; font-size: 12px; }
+</style>
+</head>
+<body>
+  <!-- แถวที่ 1: เพิ่มเกม -->
+  <div class="row">
+    <span class="brand">⚡ WebGame Controller<small>v9</small></span>
+    <input id="nameInput" type="text" placeholder="ชื่อเรียก (ไม่ใส่ก็ได้)">
+    <input id="urlInput" type="text" placeholder="https://www.aetheria-online.in.th" value="https://www.aetheria-online.in.th">
+    <button id="addBtn" class="btn primary">➕ เพิ่มเกม</button>
+    <span id="err"></span>
+    <div id="toast"><img id="toastImg" alt=""><span id="toastText"></span></div>
+  </div>
+
+  <!-- แถวที่ 2: แท็บ + เลย์เอาต์ + ขนาดหน้าต่าง -->
+  <div class="row">
+    <div id="tabs"></div>
+    <select id="layoutSel" title="แบ่งจอ (Split)">
+      <option value="single">▣ จอเดียว</option>
+      <option value="cols2">◫ 2 จอ ซ้าย|ขวา</option>
+      <option value="rows2">⬓ 2 จอ บน/ล่าง</option>
+      <option value="cols3">▥ 3 จอ</option>
+      <option value="grid4">▦ 4 จอ (2×2)</option>
+    </select>
+    <select id="winSel" title="ขนาดหน้าต่างโปรแกรม">
+      <option value="">🖥 ขนาดหน้าต่าง…</option>
+      <option value="1280x720">1280 × 720</option>
+      <option value="1600x900">1600 × 900</option>
+      <option value="1920x1080">1920 × 1080</option>
+      <option value="max">ขยายสูงสุด</option>
+      <option value="full">เต็มจอ (Fullscreen)</option>
+    </select>
+    <select id="modeSel" title="โหมดซ่อนหน้าจอ">
+      <option value="keep">Stealth: รันต่อเต็มที่</option>
+      <option value="hide">Stealth: ซ่อนจริง (ประหยัดสุด)</option>
+    </select>
+    <button id="btnStealthAll" class="btn" title="ซ่อนทุกเกม / เปิดทุกเกม">🖤 ทั้งหมด</button>
+    <button id="btnPanel" class="btn" title="แผงไอเทมที่ได้">📦 ไอเทม<span id="badge">0</span></button>
+  </div>
+
+  <!-- ช่องเกม (วิวของเกมถูกวางทับพื้นที่ใต้หัวช่อง) -->
+  <div id="panes"></div>
+
+  <!-- แผงไอเทม -->
+  <aside id="side">
+    <div class="stabs">
+      <button class="stab active" data-tab="feed">📜 ล่าสุด</button>
+      <button class="stab" data-tab="sum">📊 สรุป</button>
+      <button class="stab" data-tab="set">⚙ ตั้งค่า</button>
+    </div>
+
+    <div id="filterBar" class="sbar">
+      <select id="filterSel"><option value="">ทุกจอ</option></select>
+      <button id="btnExport" class="btn sm" title="ส่งออก CSV">⬇ CSV</button>
+      <button id="btnClear" class="btn sm danger" title="ล้างรายการ">ล้าง</button>
+    </div>
+
+    <div id="pg-feed" class="spage active"></div>
+    <div id="pg-sum" class="spage"></div>
+
+    <div id="pg-set" class="spage">
+      <div class="chk"><input type="checkbox" id="setNotify"><label for="setNotify">แจ้งเตือนเมื่อได้ไอเทม (พร้อมรูป)</label></div>
+      <div class="field">
+        <label for="setScope">แจ้งเตือนจาก</label>
+        <select id="setScope">
+          <option value="all">ทุกจอ</option>
+          <option value="stealth">เฉพาะจอที่ Stealth</option>
+        </select>
+      </div>
+      <div class="chk"><input type="checkbox" id="setSound"><label for="setSound">มีเสียงแจ้งเตือน</label></div>
+      <div class="chk"><input type="checkbox" id="setWs"><label for="setWs">ตรวจจากโครงสร้าง JSON ของ WebSocket (ทดลอง)</label></div>
+      <div class="field">
+        <label for="setRules">กฎตรวจจับไอเทม (RegExp บรรทัดละกฎ)</label>
+        <textarea id="setRules" rows="9" spellcheck="false"></textarea>
+      </div>
+      <div class="field">
+        <label for="setIgnore">ข้อความที่ไม่นับเป็นไอเทม (RegExp)</label>
+        <textarea id="setIgnore" rows="2" spellcheck="false"></textarea>
+      </div>
+      <div class="chk"><input type="checkbox" id="setDebug"><label for="setDebug">โหมด Debug (แสดงข้อความดิบที่หน้าเกมส่งมา)</label></div>
+      <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:6px;">
+        <button id="btnSave" class="btn primary sm">💾 บันทึก</button>
+        <button id="btnTest" class="btn sm">🔔 ทดสอบแจ้งเตือน</button>
+        <button id="btnReset" class="btn sm">↺ คืนค่าเริ่มต้น</button>
+      </div>
+      <div id="setMsg" class="okmsg"></div>
+      <div id="setErrs" class="errs"></div>
+      <div id="dbgWrap" style="display:none">
+        <div class="ghead">ข้อความดิบจากหน้าเกม <button id="btnDbgClear" class="btn sm">ล้าง</button></div>
+        <textarea id="dbgLog" rows="14" readonly spellcheck="false"></textarea>
+        <div class="hint">ให้เกมดรอปของ 1 ครั้ง แล้วหาบรรทัดที่มีชื่อไอเทมในกล่องนี้ จากนั้นแก้กฎด้านบนให้ตรงกับรูปแบบข้อความนั้น (บรรทัดขึ้นต้น dom = จากหน้าเกม, ws = จาก WebSocket)</div>
+      </div>
+    </div>
+  </aside>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

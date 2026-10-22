@@ -1,0 +1,12 @@
+{
+  "name": "webgame-controller",
+  "version": "9.0.0",
+  "description": "Run web games inside one window with a Stealth (hide display, keep running) button",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "devDependencies": {
+    "electron": "^33.0.0"
+  }
+}

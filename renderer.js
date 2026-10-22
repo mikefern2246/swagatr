@@ -3,11 +3,17 @@ if (!window.api) {
     window.api = {
         onState: (cb) => {},
         onItem: (cb) => {},
+        onTotals: (cb) => {}, // เพิ่มตัวนี้เข้าไปเพื่อป้องกัน Error
         act: async (...args) => {
             console.log("Web Mode dummy act:", args);
             return null;
         }
     };
+} else {
+    // เผื่อกรณีที่มี window.api อยู่แล้วแต่ขาด onTotals บางตัว
+    if (typeof window.api.onTotals !== 'function') {
+        window.api.onTotals = (cb) => {};
+    }
 }
 
 

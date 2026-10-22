@@ -307,7 +307,23 @@
   $('btnDbgClear').addEventListener('click', () => { debugLines.length = 0; $('dbgLog').value = ''; });
 
   // ---------- จาก main ----------
-  window.api.onState(s => { state = s; renderAll(); });
+  // --- ส่วนป้องกัน Error เมื่อรันบนเว็บเบราว์เซอร์ปกติ ---
+if (window.api && typeof window.api.onState === 'function') {
+    window.api.onState(s => { 
+        state = s; 
+        renderAll(); 
+    });
+} else {
+    console.log("Running in Web Mode: window.api.onState is skipped.");
+}
+
+if (window.api && typeof window.api.onItem === 'function') {
+    window.api.onItem(e => {
+        feed.push(e);
+    });
+} else {
+    console.log("Running in Web Mode: window.api.onItem is skipped.");
+}
 
   window.api.onItem(e => {
     feed.push(e);
